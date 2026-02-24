@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+ops/credentials.json
+coverage/
+.wrangler/
+package-lock.json

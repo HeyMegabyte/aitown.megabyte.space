@@ -1,0 +1,45 @@
+{
+  "name": "aitown",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-04-03",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "account_id": "84fa0d1b16ff8086dd958c468ce7fd59",
+  "containers": [
+    {
+      "class_name": "App",
+      "image": "./Dockerfile",
+      "max_instances": 1,
+      "instance_type": "standard-1"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "App",
+        "name": "APP"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "new_sqlite_classes": [
+        "App"
+      ],
+      "tag": "v1"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "aitown.megabyte.space",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "APP_DOMAIN": "aitown.megabyte.space"
+  }
+}
