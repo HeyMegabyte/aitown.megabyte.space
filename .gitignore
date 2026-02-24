@@ -5,3 +5,4 @@ ops/credentials.json
 coverage/
 .wrangler/
 package-lock.json
+ai-town-src/

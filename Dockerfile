@@ -2,37 +2,29 @@
 # AI Town — All-in-one Cloudflare Container
 # Generative AI agents living in a virtual 2D world
 # Runs: Convex self-hosted backend + AI Town React frontend
-# Port 8080 (nginx reverse proxy) → Convex API + Vite frontend
+# Port 8080 (Node.js proxy) → Convex API + Vite frontend
 # ─────────────────────────────────────────────────────────────
 
 # Stage 1: Get Convex self-hosted backend binaries
 FROM ghcr.io/get-convex/convex-backend:latest AS convex
 
 # Stage 2: AI Town combined runtime
+# node:20-bookworm includes git, curl, and other common tools
 FROM node:20-bookworm
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git curl nginx procps \
-    && rm -rf /var/lib/apt/lists/*
 
 # Copy Convex backend (binaries + helpers from /convex working dir)
 COPY --from=convex /convex /opt/convex
 
-# Clone AI Town source
-RUN git clone --depth 1 https://github.com/a16z-infra/ai-town.git /app
+# Copy pre-downloaded AI Town source (avoids SSL issues with proxy)
+COPY ai-town-src /app
 WORKDIR /app
 
-# Install Node.js dependencies
-RUN npm install
+# node_modules are pre-installed in ai-town-src (avoids npm registry SSL issues)
 
-# Copy configuration files
-COPY nginx.conf /etc/nginx/conf.d/aitown.conf
+# Copy proxy and startup scripts
+COPY proxy.mjs /proxy.mjs
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
-
-# Remove default nginx site
-RUN rm -f /etc/nginx/sites-enabled/default
 
 EXPOSE 8080
 

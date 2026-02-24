@@ -1,0 +1,6 @@
+.git
+.wrangler
+dist
+coverage
+node_modules
+ai-town-src/.git
