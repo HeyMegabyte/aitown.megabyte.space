@@ -25,33 +25,41 @@ export class App extends Container<Env> {
   }
 
   override async fetch(request: Request): Promise<Response> {
-    try {
-      // Rewrite Host header to localhost so Vite's allowedHosts check passes
-      const headers = new Headers(request.headers);
-      headers.set("Host", "localhost");
-      const modifiedRequest = new Request(request.url, {
-        method: request.method,
-        headers,
-        body: request.body,
-        redirect: request.redirect,
-      });
-      return await super.fetch(modifiedRequest);
-    } catch (e: unknown) {
-      return new Response(SPINNING_UP_HTML, {
-        status: 503,
-        headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "5" },
-      });
+    // Retry loop: wait for the container to boot and serve the real app.
+    // Avoids showing a loading page — the first request blocks until the app responds.
+    for (let attempt = 1; attempt <= 8; attempt++) {
+      try {
+        const resp = await super.fetch(request);
+        // 502/503 means container is still starting — retry
+        if (resp.status !== 502 && resp.status !== 503) {
+          return resp;
+        }
+        if (attempt === 8) return resp;
+      } catch {
+        // Container not available — if last attempt, return a minimal fallback
+        if (attempt === 8) {
+          return new Response(SPINNING_UP_HTML, {
+            status: 503,
+            headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "5" },
+          });
+        }
+      }
+      await new Promise(r => setTimeout(r, 3000));
     }
+    return new Response(SPINNING_UP_HTML, {
+      status: 503,
+      headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "5" },
+    });
   }
 }
 
-const SPINNING_UP_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>AI Town \u2014 Starting</title>
+const SPINNING_UP_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>AI Town — Starting</title>
 <meta http-equiv="refresh" content="5"><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a0f;color:#fff;font-family:Inter,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh}
 .card{text-align:center;padding:48px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;backdrop-filter:blur(20px);max-width:400px}
 h1{font-size:20px;font-weight:700;margin-bottom:8px}p{color:rgba(255,255,255,0.5);font-size:14px}
 .spinner{width:32px;height:32px;border:3px solid rgba(0,229,255,0.2);border-top-color:#00e5ff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
 @keyframes spin{to{transform:rotate(360deg)}}</style></head>
-<body><div class="card"><div class="spinner"></div><h1>AI Town</h1><p>The hippest town is waking up. This page will auto-refresh.</p></div></body></html>`;
+<body><div class="card"><div class="spinner"></div><h1>AI Town</h1><p>Container is starting up. This page will auto-refresh.</p></div></body></html>`;
 
 export default {
   async fetch(request: Request, workerEnv: Env): Promise<Response> {
@@ -62,26 +70,11 @@ export default {
     }
 
     try {
-      const id = workerEnv.APP.idFromName("aitown");
+      const id = workerEnv.APP.idFromName("ai-town");
       const stub = workerEnv.APP.get(id);
-      // Rewrite Host header so Vite inside the container allows the request
-      const headers = new Headers(request.headers);
-      headers.set("Host", "localhost");
-      const proxiedRequest = new Request(request.url, {
-        method: request.method,
-        headers,
-        body: request.body,
-        redirect: request.redirect,
-      });
-      const resp = await stub.fetch(proxiedRequest);
-      if (resp.status >= 500) {
-        return new Response(SPINNING_UP_HTML, {
-          status: 503,
-          headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "5" },
-        });
-      }
-      return resp;
+      return await stub.fetch(request);
     } catch {
+      // DO/stub-level failure — return fallback page
       return new Response(SPINNING_UP_HTML, {
         status: 503,
         headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "5" },

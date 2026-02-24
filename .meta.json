@@ -1,0 +1,6 @@
+{
+  "main_module": "index.js",
+  "compatibility_date": "2025-04-03",
+  "compatibility_flags": ["nodejs_compat"],
+  "bindings": [{"type": "durable_object_namespace", "name": "APP", "class_name": "App", "namespace_id": "3cfb807e7a7747858357824b5ecce85b"}, {"type": "plain_text", "name": "APP_DOMAIN", "text": "aitown.megabyte.space"}]
+}

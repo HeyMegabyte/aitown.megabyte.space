@@ -9,7 +9,7 @@
   "containers": [
     {
       "class_name": "App",
-      "image": "./Dockerfile",
+      "image": "registry.cloudflare.com/84fa0d1b16ff8086dd958c468ce7fd59/aitown-app:b02a6d4c",
       "max_instances": 1,
       "instance_type": "standard-1"
     }
@@ -40,6 +40,9 @@
     "enabled": true
   },
   "vars": {
+    "PUBLIC_URL": "https://aitown.megabyte.space",
+    "HOSTNAME": "aitown.megabyte.space",
+    "PORT": "8080",
     "APP_DOMAIN": "aitown.megabyte.space"
   }
 }
