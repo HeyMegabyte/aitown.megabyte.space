@@ -26,7 +26,16 @@ export class App extends Container<Env> {
 
   override async fetch(request: Request): Promise<Response> {
     try {
-      return await super.fetch(request);
+      // Rewrite Host header to localhost so Vite's allowedHosts check passes
+      const headers = new Headers(request.headers);
+      headers.set("Host", "localhost");
+      const modifiedRequest = new Request(request.url, {
+        method: request.method,
+        headers,
+        body: request.body,
+        redirect: request.redirect,
+      });
+      return await super.fetch(modifiedRequest);
     } catch (e: unknown) {
       return new Response(SPINNING_UP_HTML, {
         status: 503,
@@ -55,7 +64,16 @@ export default {
     try {
       const id = workerEnv.APP.idFromName("aitown");
       const stub = workerEnv.APP.get(id);
-      const resp = await stub.fetch(request);
+      // Rewrite Host header so Vite inside the container allows the request
+      const headers = new Headers(request.headers);
+      headers.set("Host", "localhost");
+      const proxiedRequest = new Request(request.url, {
+        method: request.method,
+        headers,
+        body: request.body,
+        redirect: request.redirect,
+      });
+      const resp = await stub.fetch(proxiedRequest);
       if (resp.status >= 500) {
         return new Response(SPINNING_UP_HTML, {
           status: 503,
