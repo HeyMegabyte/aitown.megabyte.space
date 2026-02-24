@@ -74,4 +74,4 @@ echo "  Convex:   http://127.0.0.1:3210"
 echo "  Proxy:    http://0.0.0.0:8080"
 echo ""
 
-exec npx vite --host 0.0.0.0
+exec npx vite --host 0.0.0.0 --allowedHosts all
