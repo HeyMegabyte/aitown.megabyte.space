@@ -1,4 +1,6 @@
 import { Container } from "@cloudflare/containers";
+import { env } from "cloudflare:workers";
+
 
 interface Env {
   readonly APP: DurableObjectNamespace;
@@ -10,6 +12,14 @@ export class App extends Container<Env> {
   override defaultPort = 8080;
   override sleepAfter = "30m";
   override enableInternet = true;
+
+  // Pass environment variables to the Docker container
+  override envVars = {
+    "PUBLIC_URL": (env as unknown as Env).PUBLIC_URL || "",
+    "HOSTNAME": (env as unknown as Env).HOSTNAME || "",
+    "PORT": (env as unknown as Env).PORT || "",
+    "APP_DOMAIN": (env as unknown as Env).APP_DOMAIN || "",
+  };
 
   override onStart(): void {
     console.log("[container] AI Town container started");
