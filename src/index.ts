@@ -27,26 +27,29 @@ export class App extends Container<Env> {
   override async fetch(request: Request): Promise<Response> {
     // Retry loop: wait for the container to boot and serve the real app.
     // Avoids showing a loading page — the first request blocks until the app responds.
-    for (let attempt = 1; attempt <= 8; attempt++) {
+    // CF returns 500/502/503 while the container starts (~17s each), so 3 attempts ≈ 50s.
+    const maxAttempts = 3;
+    let lastResp: Response | undefined;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const resp = await super.fetch(request);
-        // 502/503 means container is still starting — retry
-        if (resp.status !== 502 && resp.status !== 503) {
+        // Any 5xx means container infra is still starting — retry
+        if (resp.status < 500) {
           return resp;
         }
-        if (attempt === 8) return resp;
+        lastResp = resp;
+        if (attempt === maxAttempts) return resp;
       } catch {
-        // Container not available — if last attempt, return a minimal fallback
-        if (attempt === 8) {
+        if (attempt === maxAttempts) {
           return new Response(SPINNING_UP_HTML, {
             status: 503,
             headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "5" },
           });
         }
       }
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, 2000));
     }
-    return new Response(SPINNING_UP_HTML, {
+    return lastResp ?? new Response(SPINNING_UP_HTML, {
       status: 503,
       headers: { "Content-Type": "text/html; charset=utf-8", "Retry-After": "5" },
     });
