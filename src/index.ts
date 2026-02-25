@@ -19,6 +19,7 @@ export class App extends Container<Env> {
     "HOSTNAME": (env as unknown as Env).HOSTNAME || "",
     "PORT": (env as unknown as Env).PORT || "",
     "APP_DOMAIN": (env as unknown as Env).APP_DOMAIN || "",
+    "SECRET_KEY": (env as unknown as Env).SECRET_KEY || "",
   };
 
   override onStart(): void {
